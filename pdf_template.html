@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      font-family: 'Verdana', 'sans-serif';
+    }
+
+    .title {
+      text-align: center;
+    }
+
+    .graph-img {
+      margin: 0 auto;
+    }
+
+    .table1, .table2 {
+      border-collapse: collapse;
+    }
+
+    .table1 {
+      width: 100%;
+    }
+    
+
+    .table2 {
+      display: inline-block;
+      width: 48%;
+    }
+
+    .table-cell {
+      padding: 8px 8px;
+      font-size: 20px;
+      text-align: center;
+      border: 1px solid black;
+    }
+
+    .table-cell2 {
+      padding: 8px 30px;
+      font-size: 20px;
+      text-align: center;
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="title">Аналитика по зарплатам и городам для профессии {{ vacancy_name }}</h1>
+  <img class="graph-img" src="file:///C:/Users/maxsw/Documents/Учеба/2 курс/Технологии программирования/RepKhamoyan/{{ graph_name }}">
+
+  <h2 class="title">Статистика по годам</h2>
+  <table class="table1">
+    <thead>
+      <tr>
+          {% for cell in headers1 %}
+            <th class="table-cell">{{ cell }}</th>
+          {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows1 %}
+        <tr>
+          {% for cell in row %}
+            <td class="table-cell">{{ cell }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="title">Статистика по городам</h2>
+  <table class="table2">
+    <thead>
+      <tr>
+          {% for cell in headers2 %}
+            <th class="table-cell2">{{ cell }}</th>
+          {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows2 %}
+        <tr>
+          {% for cell in row %}
+            <td class="table-cell2">{{ cell }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <table class="table2">
+    <thead>
+      <tr>
+          {% for cell in headers3 %}
+            <th class="table-cell2">{{ cell }}</th>
+          {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows3 %}
+        <tr>
+          {% for cell in row %}
+            <td class="table-cell2">{{ cell }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
+
+<!-- graph_name, vacancy_name, headers1, headers2, headers3, rows1, rows2, rows3 -->
