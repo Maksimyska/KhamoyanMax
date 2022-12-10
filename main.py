@@ -360,7 +360,7 @@ def get_info():
     input_info = ["vacancies_by_year.csv", "Javascript"]
     # input_info = [input(input_request) for input_request in input_requests]
     if os.stat(input_info[0]).st_size == 0:
-        print("Пустой файл")
+        print("Пустой файлик")
         return
     data_set = DataSet(input_info[0])
     if len(data_set.vacancies_objects) == 0:
