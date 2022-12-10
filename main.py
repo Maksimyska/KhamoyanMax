@@ -145,7 +145,7 @@ class InputConnect:
 
     def info_finder(self, vacancies, parameter):
         salary_level_by_years, selected_vacancy_salary_year, count_vacancies_by_year, selected_vacancy_year_count, \
-            salary_levels_by_city, count_vacancies_by_city = {}, {}, {}, {}, {}, {}
+        salary_levels_by_city, count_vacancies_by_city = {}, {}, {}, {}, {}, {}
         for item in vacancies:
             salary = item.salary.get_salary()
             year = int(item.published_at)
@@ -190,7 +190,7 @@ class InputConnect:
             list(map(lambda dictionary:
                      dict(map(lambda dict_item:
                               (dict_item[0], int(dict_item[1][0] / dict_item[1][1]) if dict_item[1][1] != 0
-                               else int(dict_item[1][0])), dictionary.items())),
+                              else int(dict_item[1][0])), dictionary.items())),
                      (salary_level_by_years, selected_vacancy_salary_year, salary_levels_by_city)))
         count_vacancies_by_city = dict(map(lambda dict_pair: (dict_pair[0],
                                                               float(f"{dict_pair[1] / vacancies_count:.4f}")),
@@ -208,7 +208,7 @@ class InputConnect:
         salary_levels_by_city = {k: salary_levels_by_city[k] for k in list(
             salary_levels_by_city)[-10:][::-1]}
         return salary_level_by_years, selected_vacancy_salary_year, count_vacancies_by_year, \
-            selected_vacancy_year_count, salary_levels_by_city, count_vacancies_by_city, vacancies_count
+               selected_vacancy_year_count, salary_levels_by_city, count_vacancies_by_city, vacancies_count
 
 
 class Report:
@@ -258,7 +258,7 @@ class Report:
                 length = max(len(str(cell.value) if cell.value is not None else "")
                              for cell in column_cells)
                 worksheet.column_dimensions[column_cells[0]
-                                            .column_letter].width = length + 3
+                .column_letter].width = length + 3
             for cell in worksheet[1]:
                 cell.font = bold_font
             for column in tuple(worksheet.columns):
@@ -321,20 +321,22 @@ class Report:
 
     def generate_pdf(self, vacancy_name):
         headers1, headers2, headers3 = (["Год", "Средняя зарплата", f"Средняя зарплата - {vacancy_name}",
-                                        "Количество вакансий", f"Количество вакансий - {vacancy_name}"],
+                                         "Количество вакансий", f"Количество вакансий - {vacancy_name}"],
                                         ["Город", "Уровень зарплат"], ["Город", "Доля вакансий"])
         rows1 = list(map(lambda year: [year] + [dictionary[year] for dictionary in
                                                 (self.salaries_year_level, self.vacancies_year_count,
-                                                 self.selected_salary_year_level, self.selected_vacancy_year_count)], self.salaries_year_level.keys()))
+                                                 self.selected_salary_year_level, self.selected_vacancy_year_count)],
+                         self.salaries_year_level.keys()))
         rows2 = list(map(lambda city: [
-                     city, self.salaries_city_level[city]], self.salaries_city_level.keys()))
+            city, self.salaries_city_level[city]], self.salaries_city_level.keys()))
         rows3 = list(map(lambda city: [
-                     city, self.vacancies_city_count[city]], self.vacancies_city_count.keys()))
+            city, self.vacancies_city_count[city]], self.vacancies_city_count.keys()))
 
         env = Environment(loader=FileSystemLoader('.'))
         template = env.get_template("pdf_template.html")
         pdf_template = template.render(graph_name='graph.png',
-                                       vacancy_name=vacancy_name, headers1=headers1, headers2=headers2, headers3=headers3,
+                                       vacancy_name=vacancy_name, headers1=headers1, headers2=headers2,
+                                       headers3=headers3,
                                        rows1=rows1, rows2=rows2, rows3=rows3)
         config = pdfkit.configuration(
             wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
@@ -350,6 +352,9 @@ def normalize_input_info(input_info):
 
 
 def get_info():
+    main_input_request = "Выберите тип вывода: "
+    main_input_info = input(main_input_request)
+
     input_requests = ["Введите название файла: ",
                       "Введите название профессии: "]
     input_info = ["vacancies_by_year.csv", "Javascript"]
@@ -365,9 +370,18 @@ def get_info():
     formatted_info = input_connect.info_formatter(data_set.vacancies_objects)
     info = input_connect.info_finder(formatted_info, input_info[1])
     report = Report(info)
+
+    # if main_input_info != "Вакансии" and main_input_info != "Статистика":
+    #     print("Введён неправильный тип вывода")
+    #     return
+    # if main_input_info == "Вакансии":
+    #     ## пока пусто
+    # else:
+    #     ## пока пусто
     report.generate_excel(input_info[1])
     report.generate_image(input_info[1])
     report.generate_pdf(input_info[1])
 
 
-get_info()
+if __name__ == '__main__':
+    get_info()
