@@ -11,8 +11,34 @@ import pdfkit
 
 
 class Vacancy:
+    """Класс Вакансий
+
+    Attributes:
+        name (str): Имя вакансии
+        description (str):  Описание вакансии
+        key_skills (list[str]): Скиллы, необходимые вакансии
+        experience_id (str): Опыт, необходимый для вакансии
+        premium (str): Премиум вакансия или нет
+        employer_name (str): Имя компании
+        salary (Salary): Оклад
+        area_name (str): Местонахождение
+        published_at (str): Время публикации вакансии
+    """
     def __init__(self, name, description, key_skills, experience_id, premium,
                  employer_name, salary, area_name, published_at):
+        """Инициализирует объект Vacancy
+
+        Args:
+            name (str):
+            description (str | None):
+            key_skills (list[str] | None):
+            experience_id (str | None):
+            premium (str | None):
+            employer_name (str | None):
+            salary (Salary):
+            area_name (str):
+            published_at (str):
+        """
         self.name = name
         self.description = description
         self.key_skills = key_skills
@@ -25,13 +51,34 @@ class Vacancy:
 
 
 class Salary:
+    """Класс для представления оклада
+
+    Attributes:
+        salary_from (str):
+        salary_to (str):
+        salary_gross (str):
+        salary_currency (str):
+    """
     def __init__(self, salary_from, salary_to, salary_gross, salary_currency):
+        """Инициализирует объект Salary
+
+        Args:
+            salary_from (str):
+            salary_to (str):
+            salary_gross (any):
+            salary_currency (str):
+        """
         self.salary_from = salary_from
         self.salary_to = salary_to
         self.salary_gross = salary_gross
         self.salary_currency = salary_currency
 
     def currency_to_rur(self):
+        """Перевод в верхнии и нижние вилки оклада
+
+        Returns:
+            list[int,int]: Верхняя и нижняя вилки оклада в рублях
+        """
         currency_to_rub = {
             "Манаты": 35.68,
             "Белорусские рубли": 23.91,
@@ -49,10 +96,21 @@ class Salary:
                         (self.salary_from, self.salary_to)))
 
     def get_salary(self):
+        """Получение среднего значения оклада
+
+        Returns:
+            float: Среднее значение оклада
+        """
         return sum(self.currency_to_rur()) / 2
 
 
 class DataSet:
+    """Класс обработчик csv файла
+
+    Attributes:
+        file_name (str): Имя csv файла
+        vacancies_objects (list[Vacancy]): Список вакансий полученных из csv файла
+    """
     def __init__(self, file_name):
         self.file_name = file_name
         (headers, info) = self.csv_reader()
@@ -61,6 +119,13 @@ class DataSet:
         self.vacancies_objects = vacancies
 
     def csv_reader(self):
+        """Чтение csv файла.
+
+        Args:
+            file_name (str): Название csv файла
+        Returns:
+            title, info: Результат чтения из csv файла в виде пары: лист с названиями столбцов, лист с основными данными
+        """
         with open(self.file_name, encoding="utf-8-sig") as file:
             reader = [x for x in csv.reader(file)]
             title = reader.pop(0)
@@ -80,7 +145,25 @@ class DataSet:
 
     @staticmethod
     def csv_filter(title, info):
+        """Преобразование данных из csv файла в список словарей, в котором каждому словарю соответствует одна строка
+            из файла (ключ - название столбца)
+
+        Args:
+            title (list[str]): Названия столбцов
+            info (list[list[str]]): Основные данные csv файла
+
+        Returns:
+            list[dict[str,str]]: Список строк в виде словарей
+        """
         def normalize_csv_file(info_cell):
+            """Нормализация данных. Удаление лишних элементов
+
+            Args:
+                info_cell (str): Ячейка csv файла
+
+            Returns:
+                str: Нормализованная ячейка csv файла
+            """
             temp_info = "__temp__".join(info_cell.split("\n"))
             temp_info = re.sub(r"<[^<>]*>", "", temp_info)
             temp_info = re.sub(r"\s+", " ", temp_info)
@@ -109,18 +192,53 @@ class DataSet:
 
 
 class InputConnect:
+    """Класс для работы над списком Vacancy
+
+    """
     @staticmethod
     def info_formatter(vacancies):
+        """Нормализация данных в вакансиях
+
+        Args:
+            vacancies (list[Vacancy] | Vacancy): Список вакансий
+
+        Returns:
+            list[Vacancy] | Vacancy: Результат форматирования
+        """
         def formatter_string_number(str_num):
+            """Устранение дробных разделителей в строковом числе
+
+            Args:
+                str_num (str): Число для нормализации
+
+            Returns:
+                str: Результат форматирования числа
+            """
             return str_num if str_num.find('.') == -1 else str_num[:len(str_num) - 2]
 
         def formatter_salary(attr_value):
+            """Преобразование оклада в нормированный вид
+
+            Args:
+                attr_value (Salary): Объект оклада
+
+            Returns:
+                Salary: Результат форматирования оклада
+            """
             salary_from = formatter_string_number(attr_value.salary_from)
             salary_to = formatter_string_number(attr_value.salary_to)
             salary_currency = dic_currency[attr_value.salary_currency]
             return Salary(salary_from, salary_to, None, salary_currency)
 
         def formatter_published_at(attr_value):
+            """Получение года из строки, содержащей дату
+
+            Args:
+                attr_value (str): Значение времени публикации вакансии
+
+            Returns:
+                str: Год публикации
+            """
             return attr_value[0:4]
 
         dic_currency = {
@@ -144,6 +262,19 @@ class InputConnect:
         return vacancies
 
     def info_finder(self, vacancies, parameter):
+        """Формирование информации по годам о вакансиях: уровень зарплат по годам, уровень зарплат по годам для
+            выбранной вакансии, количество вакансий по годам, количество вакансий по годам для выбранной вакансии,
+            уровень зарплат по городам, количество вакансий по городам, общее количество вакансий
+
+        Args:
+            vacancies (list[Vacancy]): Список вакансий
+            finder_parameter (str): Название вакансии в качестве параметра фильтрации
+            year_str (str): Год
+
+        Returns:
+            tuple[ dict[int: tuple[int, int]], dict[int: tuple[int, int]], dict[int: int], dict[int: int] ]: Группа
+                списков
+        """
         salary_level_by_years, selected_vacancy_salary_year, count_vacancies_by_year, selected_vacancy_year_count, \
         salary_levels_by_city, count_vacancies_by_city = {}, {}, {}, {}, {}, {}
         for item in vacancies:
@@ -179,8 +310,18 @@ class InputConnect:
     @staticmethod
     def info_calculating(salary_level_by_years, selected_vacancy_salary_year, count_vacancies_by_year,
                          selected_vacancy_year_count, salary_levels_by_city, count_vacancies_by_city, vacancies_count):
+        """Окончательное форматирование словарей, фильтрация, сортировка
 
+        """
         def sort(dictionary):
+            """Сортировка словаря лексикографически
+
+            Args:
+                dictionary (dict[str: int]): Словарь для сортировки
+
+            Returns:
+                tuple[dict[str: int], dict[str: int]]: Отсортированный словарь
+            """
             dict_item = [(key, value) for key, value in dictionary.items()]
             dict_item.sort(key=cmp_to_key(
                 lambda x, y: -1 if x[1] <= y[1] else 1))
@@ -212,7 +353,20 @@ class InputConnect:
 
 
 class Report:
+    """Класс для генерации файлов по анализу статистики: графиков, excel таблиц, общего pdf-файла
+
+    Attributes:
+        salaries_year_level (dict[int: tuple[int, int]]): Уровень зарплат по годам
+        selected_salary_year_level (dict[int: tuple[int, int]]): Уровень зарплат по годам для выбранной вакансии
+        vacancies_year_count (dict[int: int]): Количество вакансий по годам
+        selected_vacancy_year_count (dict[int: int]): Количество вакансий по годам для выбранной вакансии
+        salaries_city_level (dict[str: tuple[int, int]]): Уровень зарплат по городам
+        vacancies_city_count (dict[str: int]): Количество вакансий по городам
+    """
     def __init__(self, vacancy_info):
+        """Инициализация объекта Report
+
+        """
         self.salaries_year_level = vacancy_info[0]
         self.vacancies_year_count = vacancy_info[1]
         self.selected_salary_year_level = vacancy_info[2]
@@ -221,6 +375,11 @@ class Report:
         self.vacancies_city_count = vacancy_info[5]
 
     def generate_excel(self, vacancy_name):
+        """Создание excel-файла
+
+        Args:
+            vacancy_name (str): Название выбранной вакансии
+        """
         workbook = Workbook()
         stats_by_year = workbook.worksheets[0]
         stats_by_year.title = "Cтатистика по годам"
@@ -248,8 +407,24 @@ class Report:
         self.workbook(workbook)
         workbook.save('report.xlsx')
 
+    def print_statistics(self):
+        """Выводит на печать все статистику
+
+        """
+        print("Динамика уровня зарплат по годам:", self.salaries_year_level)
+        print("Динамика количества вакансий по годам:", self.vacancies_year_count)
+        print("Динамика уровня зарплат по годам для выбранной профессии:", self.selected_salary_year_level)
+        print("Динамика количества вакансий по годам для выбранной профессии:", self.selected_vacancy_year_count)
+        print("Уровень зарплат по городам (в порядке убывания):", self.salaries_city_level)
+        print("Доля вакансий по городам (в порядке убывания):", self.vacancies_city_count)
+
     @staticmethod
     def workbook(wb):
+        """Стилизация excel-файла
+
+        Args:
+            wb (Workbook): Excel-лист
+        """
         bold_font = Font(bold=True)
         thin = Side(border_style="thin", color="000000")
         outline = Border(top=thin, left=thin, right=thin, bottom=thin)
@@ -268,6 +443,9 @@ class Report:
                     cell.border = outline
 
     def generate_image(self, vacancy_name):
+        """Создание графиков
+
+        """
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
             2, 2, figsize=(12, 7.5), layout='constrained')
         self.generate_salary_year_levels_graph(ax1, vacancy_name)
@@ -277,6 +455,12 @@ class Report:
         plt.savefig('graph.png')
 
     def generate_salary_year_levels_graph(self, ax, vacancy_name):
+        """Создание графика уровня зарплат по годам
+
+        Args:
+            ax (Ax): Объект графика
+            vacancy_name (str): Название выбранной вакансии
+        """
         ax_labels = self.salaries_year_level.keys()
         x = np.arange(len(ax_labels))
         width = 0.35
@@ -290,6 +474,12 @@ class Report:
         ax.legend(fontsize=8, loc='upper left')
 
     def generate_vacancy_year_count_graph(self, ax, vacancy_name):
+        """Создание графика количества вакансий по годам
+
+        Args:
+            ax (Ax): Объект графика
+            vacancy_name (str): Название выбранной вакансии
+        """
         ax_labels = self.vacancies_year_count.keys()
         x = np.arange(len(ax_labels))
         width = 0.35
@@ -303,6 +493,11 @@ class Report:
         ax.legend(fontsize=8, loc='upper left')
 
     def generate_salary_city_levels_graph(self, ax):
+        """Создание графика уровня зарплат по городам
+
+        Args:
+            ax (Ax): Объект графика
+        """
         ax_labels = self.salaries_city_level.keys()
         y_pos = np.arange(len(ax_labels))
         ax.barh(y_pos, self.salaries_city_level.values(), align='center')
@@ -311,6 +506,11 @@ class Report:
         ax.set_title("Уровень зарплат по городам")
 
     def generate_vacancy_city_count_graph(self, ax):
+        """Создание графика количества вакансий по городам
+
+        Args:
+            ax (Ax): Объект графика
+        """
         ax_labels, values = list(
             self.vacancies_city_count.keys()), self.vacancies_city_count.values()
         ax_labels.append('Другие')
@@ -320,6 +520,9 @@ class Report:
         ax.set_title("Доля вакансий по городам")
 
     def generate_pdf(self, vacancy_name):
+        """Создание pdf-файла
+
+        """
         headers1, headers2, headers3 = (["Год", "Средняя зарплата", f"Средняя зарплата - {vacancy_name}",
                                          "Количество вакансий", f"Количество вакансий - {vacancy_name}"],
                                         ["Город", "Уровень зарплат"], ["Город", "Доля вакансий"])
