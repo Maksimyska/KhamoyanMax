@@ -501,8 +501,8 @@ def get_statistics():
 
     """
     input_requests = ["Введите название файла: ", "Введите название профессии: "]
-    # input_info = [input(input_request) for input_request in input_requests]
-    input_info = ["vacancies_by_year.csv", "Javascript"]
+    input_info = [input(input_request) for input_request in input_requests]
+    # input_info = ["vacancies_by_year.csv", "Javascript"]
     if os.stat(input_info[0]).st_size == 0:
         print("Пустой файл")
         return
