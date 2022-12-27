@@ -5,3 +5,6 @@
 
 ## Решение 2.3.2
 ![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/2.3.2.jpg)
+
+## Решение 2.3.3
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/2.3.3.jpg)
