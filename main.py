@@ -2,7 +2,6 @@ from statistics import get_statistics
 from vacancy import get_vacancies
 
 
-
 def main_function():
     """Выбор типа анализа данных из csv-файла
     """
