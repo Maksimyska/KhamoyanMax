@@ -119,23 +119,11 @@ class DataSet:
     def __init__(self, file_name):
         """Инициализирует объект DataSet
 
+        Args:
+            file_name (str): Название файла
         """
         self.file_name = file_name
         self.headers = []
-
-    def csv_reader(self, file_name):
-        """Чтение csv файла.
-
-        Args:
-            file_name (str): Название csv файла
-        Returns:
-            title, info: Результат чтения из csv файла в виде пары: лист с названиями столбцов, лист с основными данными
-        """
-        with open(f"years/{file_name}", encoding="utf-8-sig") as f:
-            reader_info = [x for x in csv.reader(f)]
-            reader_info.pop(0)
-            f.close()
-        return reader_info
 
     def split_csv_by_year(self):
         """Разделение csv файла по годам.
@@ -183,10 +171,26 @@ class DataSet:
         Returns:
             list[list[str]]: Форматированный список вакансий
         """
-        info = self.csv_reader(csv_year_file_name)[1:]
-        return self.create_vacancy(info)
+        info = self._read_csv(csv_year_file_name)[1:]
+        return self._create_vacancies(info)
 
-    def create_vacancy(self, info):
+    def _read_csv(self, file_name):
+        """Чтение информации из csv файла я запись в список списков, в котором каждому внутреннему списку
+            соответствует одна строка из файла
+
+        Args:
+            file_name (str): Название csv файла
+
+        Returns:
+            list[list[str]]: Форматированный список вакансий
+        """
+        with open(f"years/{file_name}", encoding="utf-8-sig") as f:
+            reader_info = [x for x in csv.reader(f)]
+            reader_info.pop(0)
+            f.close()
+        return reader_info
+
+    def _create_vacancies(self, info):
         """Преобразование данных из csv файла в список вакансий, в котором каждой вакансии соответствует одна строка
             из файла (для статистики)
 
@@ -201,20 +205,18 @@ class DataSet:
 
 
 class InputConnect:
-    """Класс для работы над списком Vacancy
+    """Класс для работы над списком Vacancy: полное форматирование, нахождения необходимых вакансий
 
     """
-
     def info_formatter(self, vacancies):
         """Нормализация данных в вакансиях
 
         Args:
-            vacancies (list[Vacancy] | Vacancy): Список вакансий
+            vacancies (list[Vacancy]): Список вакансий
 
         Returns:
-            list[Vacancy] | Vacancy: Результат форматирования
+            list[Vacancy]: Результат форматирования
         """
-
         def formatter_string_number(str_num):
             """Устранение дробных разделителей в строковом числе
 
@@ -227,9 +229,11 @@ class InputConnect:
             return str_num if str_num.find('.') == -1 else str_num[:len(str_num) - 2]
 
         def formatter_salary(attr_value):
-            """Преобразование оклада
+            """Преобразование оклада в нормированный вид
+
             Args:
                 attr_value (Salary): Объект оклада
+
             Returns:
                 Salary: Результат форматирования оклада
             """
@@ -241,35 +245,51 @@ class InputConnect:
         def formatter_published_at(attr_value):
             """Получение года из строки, содержащей дату
 
+            Args:
+                attr_value (str): Значение времени публикации вакансии
+
+            Returns:
+                str: Год публикации
             """
             return attr_value[0:4]
 
-        dic_currency = {
-            "AZN": "Манаты",
-            "BYR": "Белорусские рубли",
-            "EUR": "Евро",
-            "GEL": "Грузинский лари",
-            "KGS": "Киргизский сом",
-            "KZT": "Тенге",
-            "RUR": "Рубли",
-            "UAH": "Гривны",
-            "USD": "Доллары",
-            "UZS": "Узбекский сум"
-        }
+        def format_vacancy(vacancy):
+            """Форматирование аттрибутов вакансии
 
-        return [formatter_published_at(vacancy) for vacancy in vacancies]
+            Args:
+                vacancy (Vacancy): Вакансия
 
-    #
-    def info_finder(self, vacancies, finder_parameter, year_str):
-        """Формирование информации по годам о вакансиях:
-            уровень зарплат по годам, уровень зарплат по годам для выбранной вакансии,
-            количество вакансий по годам,
-            количество вакансий по годам для выбранной вакансии,
-            уровень зарплат по городам,
-            количество вакансий по городам,
-            общее количество вакансий
+            Returns:
+                Vacancy: Вакансия с отформатированными аттрибутами
+            """
+            setattr(vacancy, "salary", formatter_salary(getattr(vacancy, "salary")))
+            setattr(vacancy, "published_at", formatter_published_at(getattr(vacancy, "published_at")))
+            return vacancy
+
+        dic_currency = {"AZN": "Манаты", "BYR": "Белорусские рубли", "EUR": "Евро",
+                        "GEL": "Грузинский лари", "KGS": "Киргизский сом", "KZT": "Тенге", "RUR": "Рубли",
+                        "UAH": "Гривны", "USD": "Доллары", "UZS": "Узбекский сум"}
+
+        # for vacancy in vacancies:
+        #     setattr(vacancy, "salary", formatter_salary(getattr(vacancy, "salary")))
+        #     setattr(vacancy, "published_at", formatter_published_at(getattr(vacancy, "published_at")))
+
+        return [format_vacancy(vacancy) for vacancy in vacancies]
+
+    def year_info_finder(self, vacancies, finder_parameter, year_str):
+        """Формирование информации по годам о вакансиях: уровень зарплат по годам, уровень зарплат по годам для
+            выбранной вакансии, количество вакансий по годам, количество вакансий по годам для выбранной вакансии,
+            уровень зарплат по городам, количество вакансий по городам, общее количество вакансий
+
+        Args:
+            vacancies (list[Vacancy]): Список вакансий
+            finder_parameter (str): Название вакансии в качестве параметра фильтрации
+            year_str (str): Год
+
+        Returns:
+            tuple[ dict[int: tuple[int, int]], dict[int: tuple[int, int]], dict[int: int], dict[int: int] ]: Группа
+                списков
         """
-
         year = int(year_str)
         salaries_year_level, selected_salary_year_level, vacancies_year_count, selected_vacancy_year_count, = \
             {}, {}, {}, {}
@@ -282,8 +302,9 @@ class InputConnect:
                 previous_value = selected_salary_year_level.get(year, (0, 0))
                 selected_salary_year_level[year] = (previous_value[0] + salary, previous_value[1] + 1)
                 selected_vacancy_year_count[year] = selected_vacancy_year_count.get(year, 0) + 1
-        return self.info_calculating(salaries_year_level, selected_salary_year_level, vacancies_year_count,
-                                     selected_vacancy_year_count)
+        return self._year_info_calculating(salaries_year_level, selected_salary_year_level, vacancies_year_count,
+                                           selected_vacancy_year_count)
+
     def city_info_finder(self, vacancies):
         """Формирование информации по годам о вакансиях: уровень зарплат по годам, уровень зарплат по годам для
             выбранной вакансии, количество вакансий по годам, количество вакансий по годам для выбранной вакансии,
@@ -302,18 +323,36 @@ class InputConnect:
             salaries_city_level[vacancy.area_name] = (previous_value[0] + salary, previous_value[1] + 1)
             vacancies_city_count[vacancy.area_name] = vacancies_city_count.get(vacancy.area_name, 0) + 1
         return self._city_info_calculating(salaries_city_level, vacancies_city_count, len(vacancies))
-    @staticmethod
-    def info_calculating(salary_level_by_years, selected_vacancy_salary_year, count_vacancies_by_year,
-                         selected_vacancy_year_count):
+
+    def _year_info_calculating(self, salaries_year_level, selected_salary_year_level, vacancies_year_count,
+                               selected_vacancy_year_count):
         """Окончательное форматирование словарей, фильтрация, сортировка, выборка первого десятка для некоторых
 
-        """
-        (salary_level_by_years, selected_vacancy_salary_year) = [
-            {dict_pair[0]: int(dict_pair[1][0] / dict_pair[1][1]) if dict_pair[1][1] != 0 else int(dict_pair[1][0])
-             for dict_pair in dictionary.items()}
-            for dictionary in (salary_level_by_years, selected_vacancy_salary_year)]
+        Args:
+            salaries_year_level (dict[int: tuple[int, int]]): Уровень зарплат по годам
+            selected_salary_year_level (dict[int: tuple[int, int]]): Уровень зарплат по годам для выбранной вакансии
+            vacancies_year_count (dict[int: int]): Количество вакансий по годам
+            selected_vacancy_year_count (dict[int: int]): Количество вакансий по годам для выбранной вакансии
 
-        return salary_level_by_years, salary_level_by_years, count_vacancies_by_year, selected_vacancy_year_count
+        Returns:
+            tuple[ dict[int: tuple[int, int]], dict[int: tuple[int, int]], dict[int: int], dict[int: int] ]:
+                Уровень зарплат по годам, Уровень зарплат по годам для выбранной вакансии, Количество вакансий по годам,
+                Количество вакансий по годам для выбранной вакансии
+        """
+
+        (salaries_year_level, selected_salary_year_level) = [
+                {dict_pair[0]: int(dict_pair[1][0] / dict_pair[1][1]) if dict_pair[1][1] != 0 else int(dict_pair[1][0])
+                    for dict_pair in dictionary.items()}
+                for dictionary in (salaries_year_level, selected_salary_year_level)]
+
+        # (salaries_year_level, selected_salary_year_level) = \
+        #     list(map(lambda dictionary:
+        #              dict(map(lambda dict_pair:
+        #                       (dict_pair[0], int(dict_pair[1][0] / dict_pair[1][1])
+        #                       if dict_pair[1][1] != 0
+        #                       else int(dict_pair[1][0])), dictionary.items())),
+        #              (salaries_year_level, selected_salary_year_level)))
+        return salaries_year_level, selected_salary_year_level, vacancies_year_count, selected_vacancy_year_count
 
     @staticmethod
     def _city_info_calculating(salaries_city_level, vacancies_city_count, vacancies_count):
@@ -328,7 +367,6 @@ class InputConnect:
             tuple[ dict[str: tuple[int, int]], dict[str: int] ]: Уровень зарплат по городам, Количество вакансий
                 по городам
         """
-
         def sort_dict(dictionary):
             """Сортировка словаря лексикографически
 
@@ -344,18 +382,27 @@ class InputConnect:
 
         vacancies_city_count = {dict_pair[0]: float(f"{dict_pair[1] / vacancies_count:.4f}")
                                 for dict_pair in vacancies_city_count.items()}
-        vacancies_city_count = {dict_pair[0]: dict_pair[1] for dict_pair in vacancies_city_count.items() if
-                                dict_pair[1] >= 0.01}
+        vacancies_city_count = {dict_pair[0]: dict_pair[1] for dict_pair in vacancies_city_count.items() if dict_pair[1] >= 0.01}
         vacancies_city_count = sort_dict(vacancies_city_count)
-        vacancies_city_count = {dict_pair[0]: f"{round(dict_pair[1] * 100, 2)}%" for dict_pair in
-                                vacancies_city_count.items()}
+        vacancies_city_count = {dict_pair[0]: f"{round(dict_pair[1] * 100, 2)}%" for dict_pair in vacancies_city_count.items()}
         salaries_city_level = {dict_pair[0]:
-                                   int(dict_pair[1][0] / dict_pair[1][1]) if dict_pair[1][1] != 0 else int(
-                                       dict_pair[1][0])
+                                int(dict_pair[1][0] / dict_pair[1][1]) if dict_pair[1][1] != 0 else int(dict_pair[1][0])
                                for dict_pair in salaries_city_level.items()}
-        salaries_city_level = {dict_pair[0]: dict_pair[1] for dict_pair in salaries_city_level.items() if
-                               dict_pair[0] in vacancies_city_count}
+        salaries_city_level = {dict_pair[0]: dict_pair[1] for dict_pair in salaries_city_level.items() if dict_pair[0] in vacancies_city_count}
         salaries_city_level = sort_dict(salaries_city_level)
+
+
+        # vacancies_city_count = dict(map(lambda dict_pair: (dict_pair[0],
+        #                             float(f"{dict_pair[1] / vacancies_count:.4f}")), vacancies_city_count.items()))
+        # vacancies_city_count = dict(filter(lambda dict_pair: dict_pair[1] >= 0.01, vacancies_city_count.items()))
+        # vacancies_city_count = sort_dict(vacancies_city_count)
+        # vacancies_city_count = dict(map(lambda dict_pair: (dict_pair[0], f"{round(dict_pair[1] * 100, 2)}%"),
+        #                                 vacancies_city_count.items()))
+        # salaries_city_level = dict(map(lambda dict_pair: (dict_pair[0], int(dict_pair[1][0] / dict_pair[1][1])
+        #                                if dict_pair[1][1] != 0 else int(dict_pair[1][0])), salaries_city_level.items()))
+        # salaries_city_level = dict(filter(lambda dict_pair: dict_pair[0] in vacancies_city_count,
+        #                                   salaries_city_level.items()))
+        # salaries_city_level = sort_dict(salaries_city_level)
 
         vacancies_city_count = {k: vacancies_city_count[k] for k in list(vacancies_city_count)[-10:][::-1]}
         salaries_city_level = {k: salaries_city_level[k] for k in list(salaries_city_level)[-10:][::-1]}
@@ -366,17 +413,20 @@ class Report:
     """Класс для генерации файлов по анализу статистики: графиков, excel таблиц, общего pdf-файла
 
     Attributes:
-        salaries_year_level (dict[int: tuple[int, int]]): ЗП по годам
+        salaries_year_level (dict[int: tuple[int, int]]): Уровень зарплат по годам
         selected_salary_year_level (dict[int: tuple[int, int]]): Уровень зарплат по годам для выбранной вакансии
         vacancies_year_count (dict[int: int]): Количество вакансий по годам
         selected_vacancy_year_count (dict[int: int]): Количество вакансий по годам для выбранной вакансии
         salaries_city_level (dict[str: tuple[int, int]]): Уровень зарплат по городам
         vacancies_city_count (dict[str: int]): Количество вакансий по городам
     """
-
     def __init__(self, vacancy_info):
         """Инициализация объекта Report
 
+        Args:
+            vacancy_info (tuple[dict[int: tuple[int, int]], dict[int: tuple[int, int]], dict[int: int],
+             dict[int: int], dict[str: tuple[int, int]], dict[str: int]]):
+             Все словари созданные методом info_finder класса Input_Connect
         """
         self.salaries_year_level = vacancy_info[0]
         self.vacancies_year_count = vacancy_info[1]
@@ -397,15 +447,15 @@ class Report:
         print("Доля вакансий по городам (в порядке убывания):", self.vacancies_city_count)
 
     def generate_excel(self, vacancy_name):
-        """Создание excel-файла
+        """Создание excel-файла основываясь на словарях аттрибутов объекта Report
 
         Args:
             vacancy_name (str): Название выбранной вакансии
         """
-        workbook = Workbook()
-        stats_by_year = workbook.worksheets[0]
+        wb = Workbook()
+        stats_by_year = wb.worksheets[0]
         stats_by_year.title = "Cтатистика по годам"
-        stats_by_city = workbook.create_sheet("Cтатистика по городам")
+        stats_by_city = wb.create_sheet("Cтатистика по городам")
 
         stats_by_year.append(["Год", "Средняя зарплата", f"Средняя зарплата - {vacancy_name}",
                               "Количество вакансий", f"Количество вакансий - {vacancy_name}"])
@@ -423,12 +473,12 @@ class Report:
             stats_by_city.cell(row=i, column=4, value=city)
             stats_by_city.cell(row=i, column=5, value=self.vacancies_city_count[city])
 
-        self.workbook(workbook)
-        workbook.save('report.xlsx')
+        self._slylize_wb(wb)
+        wb.save('report.xlsx')
 
     @staticmethod
-    def workbook(wb):
-        """Стилизация excel-файла
+    def _slylize_wb(wb):
+        """Стилизация рабочего листа excel-файла
 
         Args:
             wb (Workbook): Excel-лист
@@ -449,17 +499,19 @@ class Report:
                     cell.border = outline
 
     def generate_image(self, vacancy_name):
-        """Создание графиков
+        """Создание графиков основываясь на словарях аттрибутов объекта Report
 
+        Args:
+            vacancy_name (str): Название выбранной вакансии
         """
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 7.5), layout='constrained')
-        self.generate_salary_year_levels_graph(ax1, vacancy_name)
-        self.generate_vacancy_year_count_graph(ax2, vacancy_name)
-        self.generate_salary_city_levels_graph(ax3)
-        self.generate_vacancy_city_count_graph(ax4)
+        self._generate_salary_year_levels_graph(ax1, vacancy_name)
+        self._generate_vacancy_year_count_graph(ax2, vacancy_name)
+        self._generate_salary_city_levels_graph(ax3)
+        self._generate_vacancy_city_count_graph(ax4)
         plt.savefig('graph.png')
 
-    def generate_salary_year_levels_graph(self, ax, vacancy_name):
+    def _generate_salary_year_levels_graph(self, ax, vacancy_name):
         """Создание графика уровня зарплат по годам
 
         Args:
@@ -476,7 +528,7 @@ class Report:
         ax.yaxis.grid(True)
         ax.legend(fontsize=8, loc='upper left')
 
-    def generate_vacancy_year_count_graph(self, ax, vacancy_name):
+    def _generate_vacancy_year_count_graph(self, ax, vacancy_name):
         """Создание графика количества вакансий по годам
 
         Args:
@@ -493,7 +545,7 @@ class Report:
         ax.yaxis.grid(True)
         ax.legend(fontsize=8, loc='upper left')
 
-    def generate_salary_city_levels_graph(self, ax):
+    def _generate_salary_city_levels_graph(self, ax):
         """Создание графика уровня зарплат по городам
 
         Args:
@@ -506,7 +558,7 @@ class Report:
         ax.invert_yaxis()
         ax.set_title("Уровень зарплат по городам")
 
-    def generate_vacancy_city_count_graph(self, ax):
+    def _generate_vacancy_city_count_graph(self, ax):
         """Создание графика количества вакансий по городам
 
         Args:
@@ -520,15 +572,17 @@ class Report:
         ax.set_title("Доля вакансий по городам")
 
     def generate_pdf(self, vacancy_name):
-        """Создание pdf-файла
+        """Создание pdf-файла основываясь на словарях аттрибутов объекта Report
 
+        Args:
+            vacancy_name (str): Название выбранной вакансии
         """
         headers1, headers2, headers3 = (["Год", "Средняя зарплата", f"Средняя зарплата - {vacancy_name}",
-                                         "Количество вакансий", f"Количество вакансий - {vacancy_name}"],
+                                        "Количество вакансий", f"Количество вакансий - {vacancy_name}"],
                                         ["Город", "Уровень зарплат"], ["Город", "Доля вакансий"])
         rows1 = list(map(lambda year: [year] + [dictionary[year] for dictionary in
-                                                (self.salaries_year_level, self.vacancies_year_count,
-                                                 self.selected_salary_year_level, self.selected_vacancy_year_count)]
+                                       (self.salaries_year_level, self.vacancies_year_count,
+                                        self.selected_salary_year_level, self.selected_vacancy_year_count)]
                          , self.salaries_year_level.keys()))
         rows2 = list(map(lambda city: [city, self.salaries_city_level[city]], self.salaries_city_level.keys()))
         rows3 = list(map(lambda city: [city, self.vacancies_city_count[city]], self.vacancies_city_count.keys()))
@@ -544,6 +598,8 @@ class Report:
 
 
 ######################################################################################################################
+
+
 class Consumer(multiprocessing.Process):
     """Служит для представления одного процесса, который берёт одну задачу из очереди задач и после выполнения кладёт
         результат в очереди результатов
@@ -613,7 +669,7 @@ class Task():
         """
         vacancies_for_year = self.data_set.get_vacancies_from_file(self.file_name)
         formatted_info = self.input_connect.info_formatter(vacancies_for_year)
-        return formatted_info, self.input_connect.info_finder(formatted_info, "Javascript", self.file_name[:-4])
+        return formatted_info, self.input_connect.year_info_finder(formatted_info, "Программист", self.file_name[:-4])
 
 
 def get_statistics():
@@ -653,7 +709,7 @@ def get_statistics():
 
     input_requests = ["Введите название файла: ", "Введите название профессии: "]
     # input_info = [input(input_request) for input_request in input_requests]
-    input_info = ["vacancies_by_year.csv", "Javascript"]
+    input_info = ["vacancies_by_year.csv", "Программист"]
     if stat(input_info[0]).st_size == 0:
         print("Пустой файл")
         return
@@ -682,4 +738,6 @@ def get_statistics():
     cities_statistics = input_connect.city_info_finder(reduce(operator.concat, full_vacancies_info))
     report = Report(reduce(operator.concat, [years_statistics, cities_statistics]))
     report.print_statistics()
-
+    # report.generate_excel(input_info[1])
+    # report.generate_image(input_info[1])
+    # report.generate_pdf(input_info[1])
