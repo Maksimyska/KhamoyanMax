@@ -14,3 +14,13 @@
 ![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/DO%203.2.2.jpg)
 ![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/POSLE%203.2.2.jpg)
 
+
+## Решение 3.3.1
+Частота встречаемости валюты:
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/3.3.1.jpg)
+
+dataframe представлен в файле *currency_quotes.csv*
+
+## Решение 3.3.2
+Первые 100 результатов в формате CSV представлены файлом *formatted_vacancies.csv*
+
