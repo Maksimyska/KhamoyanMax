@@ -1,13 +1,13 @@
-import csv
 import operator
 import multiprocessing
 import time
-from time import sleep
 import pdfkit
 import requests
 import csv
 import json
+import sqlite3
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 from os import listdir, stat
@@ -63,7 +63,20 @@ class Vacancy:
 class ApiReader:
     """Класс для получения данных из внешних api и формировании по ним файлов
 
+    Attributes:
+        connect (sqlite3.connect): Объект управления базой данных
+        cursor (sqlite3.connect): Объект управления базой данных
+        db_path (str): Путь к базе данных
     """
+    def __init__(self, db_path):
+        """Инициализация объекта CurrencyApiConnect
+
+        Args:
+            db_path (str): Путь к базе данных
+        """
+        self.connect = sqlite3.connect(db_path)
+        self.cursor = self.connect.cursor()
+        self.db_path = db_path
 
     def get_currency_quotes(self, year_borders):
         """Получение обозначений валют и соответствующих им значений котировок по диапазону годов
@@ -85,42 +98,56 @@ class ApiReader:
                           for tag in root_node.findall('Valute')}
                 quotes_for_months[f"{year}-{month}"] = quotes
                 req.close()
-                sleep(0.03)
+                time.sleep(0.03)
         return quotes_for_months
 
-    def save_currency_quotes_in_csv(self, file_name, quotes_for_months, currencies):
-        """Запись котировок валют в csv файл
+    def save_currency_quotes_in_db(self, quotes_for_months, currencies):
+        """Запись котировок валют в db файл
 
         Args:
-            file_name (str): Название файла, куда нужно будет сохранять данные
             quotes_for_months (list[tuple[str, dict[str: float]]]): Котировки валют по месяцам
             currencies (list[str]): Названия валют
         """
-        fieldnames = ['date']
-        fieldnames.extend(currencies)
-        with open(f"{file_name}.csv", mode="w", encoding='utf-8') as file:
-            fileWriter = csv.DictWriter(file, delimiter=",", lineterminator="\r", fieldnames=fieldnames)
-            fileWriter.writeheader()
-            for (month, quotes_for_month) in quotes_for_months.items():
-                quotes = {'date': month}
-                quotes.update({currency: quotes_for_month.get(currency, None) if currency != 'RUR' else 1
-                               for currency in currencies})
-                fileWriter.writerow(quotes)
 
-    def read_currency_quotes_from_csv(self, file_name):
-        """Чтение котировок валют из csv файла
+        def db_query_join(query, type, join_str, data):
+            i = 0
+            while True:
+                query = f"{query}{data[i]}{type}"
+                if (i != len(data) - 1):
+                    query += join_str
+                    i += 1
+                else:
+                    query += ');'
+                    break
+            return query
+
+        query = db_query_join("CREATE TABLE IF NOT EXISTS quotes(\ndate TEXT PRIMARY KEY,\n", ' REAL', ',\n',
+                              currencies)
+        self.cursor.execute(query)
+        self.connect.commit()
+        query = db_query_join("INSERT INTO quotes\nVALUES(?, ", '', ', ', ['?' for _ in currencies])
+        for (date, quotes_for_month) in quotes_for_months.items():
+            quotes = tuple([date])
+            quotes += tuple(list(map(lambda currency: quotes_for_month.get(currency, None)
+            if currency != 'RUR' else 1, currencies)))
+            self.cursor.execute(query, quotes)
+        self.connect.commit()
+
+    def read_currency_quotes_from_db(self, currencies):
+        """Чтение котировок валют из db файла
 
         Args:
-            file_name (str): Название csv файла
+            currencies (list[str]): Названия валют
 
         Returns:
             dict[str: dict[str: float]]: Котировки валют по годам
         """
-        quotes_for_years = {}
-        with open(f"{file_name}.csv", encoding='utf-8') as file:
-            fileReader = csv.DictReader(file, delimiter=",")
-            for row in fileReader:
-                quotes_for_years[row.pop('date')] = row
+        self.cursor.execute("SELECT * FROM quotes;")
+        date_and_quotes = self.cursor.fetchall()
+        quotes_for_years = {date_and_quotes[date_index][0]:
+                                {currencies[currency_index]: date_and_quotes[date_index][currency_index + 1]
+                                 for currency_index in range(len(currencies))}
+                            for date_index in range(len(date_and_quotes))}
         return quotes_for_years
 
 
@@ -166,20 +193,32 @@ class DataSet:
         """
         (headers, years_vacancy_info) = self.big_csv_reader(file_path)
         popular_currencies = self.get_most_popular_currencies(years_vacancy_info)
-        currency_connect = ApiReader()
-
-        currency_quotes = currency_connect.read_currency_quotes_from_csv("currency_quotes")
+        currency_db = ApiReader('currency_quotes.db')
+        quotes = currency_db.get_currency_quotes(self.get_year_borders(years_vacancy_info))
+        currency_db.save_currency_quotes_in_db(quotes, popular_currencies)
+        popular_currency_quotes = currency_db.read_currency_quotes_from_db(popular_currencies)
 
         filtered_years_vacancy_info = {}
-        currency_to_rur = {"AZN": 35.68, "BYR": 23.91, "EUR": 59.90, "GEL": 21.74, "KGS": 0.76,
-                           "KZT": 0.13, "RUR": 1, "UAH": 1.64, "USD": 60.66, "UZS": 0.0055}
+        currency_to_rur = {
+            "AZN": 35.68,
+            "BYR": 23.91,
+            "EUR": 59.90,
+            "GEL": 21.74,
+            "KGS": 0.76,
+            "KZT": 0.13,
+            "RUR": 1,
+            "UAH": 1.64,
+            "USD": 60.66,
+            "UZS": 0.0055
+        }
+
         for year, year_info in years_vacancy_info.items():
             filtered_year_info = []
             for vacancy_info in year_info:
                 if vacancy_info[3] not in popular_currencies \
                         or any(map(lambda x: x == '',
                                    (vacancy_info[0], vacancy_info[3], vacancy_info[-2], vacancy_info[-1]))): continue
-                quote_value = currency_quotes[vacancy_info[-1][:7]][vacancy_info[3]]
+                quote_value = popular_currency_quotes[vacancy_info[-1][:7]][vacancy_info[3]]
                 salary = float(quote_value if quote_value != '' else currency_to_rur[vacancy_info[3]]) \
                          * (self.int_or_default(vacancy_info[1], 0) + self.int_or_default(vacancy_info[2], 0)) / 2
                 if salary == 0: continue
