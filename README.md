@@ -2,22 +2,22 @@
 
 
 ## Решение 2.3.1
-![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/csv_years.jpg)
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/screen/csv_years.jpg)
 
 ## Решение 2.3.2
-![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/2.3.2.jpg)
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/screen/2.3.2.jpg)
 
 ## Решение 2.3.3
-![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/2.3.3.jpg)
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/screen/2.3.3.jpg)
 
 ## Разницы в скорости получения статистики до и после мультипроцессинга
-![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/DO%203.2.2.jpg)
-![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/POSLE%203.2.2.jpg)
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/screen/DO%203.2.2.jpg)
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/screen/POSLE%203.2.2.jpg)
 
 
 ## Решение 3.3.1
 Частота встречаемости валюты:
-![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/3.3.1.jpg)
+![Alt text](https://github.com/Maksimyska/KhamoyanMax/blob/main/screen/3.3.1.jpg)
 
 dataframe представлен в файле *currency_quotes.csv*
 
